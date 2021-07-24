@@ -18,8 +18,17 @@ jobs:
       with:
         go-version: 1.16
 
-    - name: Build
-      run: go build -v ./...
+    - name: Build (amd64)
+      run: GOARCH=amd64 go build -v ./...
+
+    - name: Build (386)
+      run: GOARCH=386 go build -v ./...
+
+    - name: Build (arm64)
+      run: GOARCH=arm64 go build -v ./...
+
+    - name: Build (arm)
+      run: GOARCH=arm go build -v ./...
   
     - name: Test
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...

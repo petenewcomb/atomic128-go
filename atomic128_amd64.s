@@ -84,3 +84,66 @@ done:
     MOVQ BX, val+24(FP)
     MOVQ CX, val+32(FP)
 	RET    
+
+TEXT ·andUint128amd64(SB),NOSPLIT,$0
+	MOVQ addr+0(FP), BP
+    MOVQ 0(BP), AX
+    MOVQ 8(BP), DX
+    MOVQ incr+8(FP), SI
+    MOVQ incr+16(FP), DI
+loop:
+    MOVQ AX, BX
+    MOVQ DX, CX
+    ANDQ SI, BX
+    ANDQ DI, CX
+	LOCK
+	CMPXCHG16B (BP)
+    JE done
+    PAUSE
+	JMP loop
+done:
+    MOVQ BX, val+24(FP)
+    MOVQ CX, val+32(FP)
+	RET    
+
+TEXT ·orUint128amd64(SB),NOSPLIT,$0
+	MOVQ addr+0(FP), BP
+    MOVQ 0(BP), AX
+    MOVQ 8(BP), DX
+    MOVQ incr+8(FP), SI
+    MOVQ incr+16(FP), DI
+loop:
+    MOVQ AX, BX
+    MOVQ DX, CX
+    ORQ SI, BX
+    ORQ DI, CX
+	LOCK
+	CMPXCHG16B (BP)
+    JE done
+    PAUSE
+	JMP loop
+done:
+    MOVQ BX, val+24(FP)
+    MOVQ CX, val+32(FP)
+	RET    
+
+TEXT ·xorUint128amd64(SB),NOSPLIT,$0
+	MOVQ addr+0(FP), BP
+    MOVQ 0(BP), AX
+    MOVQ 8(BP), DX
+    MOVQ incr+8(FP), SI
+    MOVQ incr+16(FP), DI
+loop:
+    MOVQ AX, BX
+    MOVQ DX, CX
+    XORQ SI, BX
+    XORQ DI, CX
+	LOCK
+	CMPXCHG16B (BP)
+    JE done
+    PAUSE
+	JMP loop
+done:
+    MOVQ BX, val+24(FP)
+    MOVQ CX, val+32(FP)
+	RET    

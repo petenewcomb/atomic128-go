@@ -106,6 +106,75 @@ func TestSwap(t *testing.T) {
 	})
 }
 
+func TestAnd(t *testing.T) {
+	runTests(t, func(t *testing.T) {
+		n := &Uint128{}
+		StoreUint128(n, [2]uint64{0x01234567, 0x89abcdef})
+		v := AndUint128(n, [2]uint64{0xffff0000, 0x0000ffff})
+		if got, expected := v, [2]uint64{0x01230000, 0x0000cdef}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = LoadUint128(n)
+		if got, expected := v, [2]uint64{0x01230000, 0x0000cdef}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = AndUint128(n, [2]uint64{0x0000ffff, 0xffff0000})
+		if got, expected := v, [2]uint64{0, 0}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = LoadUint128(n)
+		if got, expected := v, [2]uint64{0, 0}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+	})
+}
+
+func TestOr(t *testing.T) {
+	runTests(t, func(t *testing.T) {
+		n := &Uint128{}
+		StoreUint128(n, [2]uint64{0x01234567, 0x89abcdef})
+		v := OrUint128(n, [2]uint64{0xffff0000, 0x0000ffff})
+		if got, expected := v, [2]uint64{0xffff4567, 0x89abffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = LoadUint128(n)
+		if got, expected := v, [2]uint64{0xffff4567, 0x89abffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = OrUint128(n, [2]uint64{0x0000ffff, 0xffff0000})
+		if got, expected := v, [2]uint64{0xffffffff, 0xffffffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = LoadUint128(n)
+		if got, expected := v, [2]uint64{0xffffffff, 0xffffffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+	})
+}
+
+func TestXor(t *testing.T) {
+	runTests(t, func(t *testing.T) {
+		n := &Uint128{}
+		StoreUint128(n, [2]uint64{0x01234567, 0x89abcdef})
+		v := XorUint128(n, [2]uint64{0xffff0000, 0x0000ffff})
+		if got, expected := v, [2]uint64{0x01234567 ^ 0xffff0000, 0x89abcdef ^ 0x0000ffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = LoadUint128(n)
+		if got, expected := v, [2]uint64{0x01234567 ^ 0xffff0000, 0x89abcdef ^ 0x0000ffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = XorUint128(n, [2]uint64{0x0000ffff, 0xffff0000})
+		if got, expected := v, [2]uint64{0x01234567 ^ 0xffffffff, 0x89abcdef ^ 0xffffffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+		v = LoadUint128(n)
+		if got, expected := v, [2]uint64{0x01234567 ^ 0xffffffff, 0x89abcdef ^ 0xffffffff}; got != expected {
+			t.Fatalf("got %v, expected %v", got, expected)
+		}
+	})
+}
+
 func BenchmarkLoad(b *testing.B) {
 	n := &Uint128{}
 	runBenchmarks(b, func(pb *testing.PB) {
@@ -141,6 +210,36 @@ func BenchmarkAdd(b *testing.B) {
 		i, j := rand.Uint64(), rand.Uint64()
 		for pb.Next() {
 			_ = AddUint128(n, [2]uint64{i, j})
+		}
+	})
+}
+
+func BenchmarkAnd(b *testing.B) {
+	n := &Uint128{}
+	runBenchmarks(b, func(pb *testing.PB) {
+		i, j := rand.Uint64(), rand.Uint64()
+		for pb.Next() {
+			_ = AndUint128(n, [2]uint64{i, j})
+		}
+	})
+}
+
+func BenchmarkOr(b *testing.B) {
+	n := &Uint128{}
+	runBenchmarks(b, func(pb *testing.PB) {
+		i, j := rand.Uint64(), rand.Uint64()
+		for pb.Next() {
+			_ = OrUint128(n, [2]uint64{i, j})
+		}
+	})
+}
+
+func BenchmarkXor(b *testing.B) {
+	n := &Uint128{}
+	runBenchmarks(b, func(pb *testing.PB) {
+		i, j := rand.Uint64(), rand.Uint64()
+		for pb.Next() {
+			_ = XorUint128(n, [2]uint64{i, j})
 		}
 	})
 }
@@ -189,16 +288,27 @@ func fallback(tb testing.TB) {
 	store := storeUint128
 	swap := swapUint128
 	add := addUint128
+	and := andUint128
+	or := orUint128
+	xor := xorUint128
+
 	compareAndSwapUint128 = nil
 	loadUint128 = nil
 	storeUint128 = nil
 	swapUint128 = nil
 	addUint128 = nil
+	andUint128 = nil
+	orUint128 = nil
+	xorUint128 = nil
+
 	tb.Cleanup(func() {
 		compareAndSwapUint128 = cas
 		loadUint128 = load
 		storeUint128 = store
 		swapUint128 = swap
 		addUint128 = add
+		andUint128 = and
+		orUint128 = or
+		xorUint128 = xor
 	})
 }

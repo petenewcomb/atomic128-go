@@ -42,4 +42,4 @@ CAS/fallback    25.3ns ± 2%
 ## TODO
 
 - Add ARM/aarch64 assembly version
-- Add AND/OR/XOR operations
+- Add shift/rotate operations

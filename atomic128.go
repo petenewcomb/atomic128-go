@@ -102,6 +102,57 @@ func AddUint128(ptr *Uint128, incr [2]uint64) [2]uint64 {
 	return v
 }
 
+// AndUint128 atomically performs a bitwise AND of the op value to the 128 bit value pointed to by ptr,
+// and it returns the resulting 128 bit value.
+// In the op and returned values the first of the two elements is the low-order bits.
+func AndUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
+	if andUint128 != nil {
+		return andUint128(addr(ptr), op)
+	}
+
+	ptr.m.Lock()
+	v := load(ptr)
+	v[0] &= op[0]
+	v[1] &= op[1]
+	store(ptr, v)
+	ptr.m.Unlock()
+	return v
+}
+
+// OrUint128 atomically performs a bitwise OR of the op value to the 128 bit value pointed to by ptr,
+// and it returns the resulting 128 bit value.
+// In the op and returned values the first of the two elements is the low-order bits.
+func OrUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
+	if orUint128 != nil {
+		return orUint128(addr(ptr), op)
+	}
+
+	ptr.m.Lock()
+	v := load(ptr)
+	v[0] |= op[0]
+	v[1] |= op[1]
+	store(ptr, v)
+	ptr.m.Unlock()
+	return v
+}
+
+// XorUint128 atomically performs a bitwise XOR of the op value to the 128 bit value pointed to by ptr,
+// and it returns the resulting 128 bit value.
+// In the op and returned values the first of the two elements is the low-order bits.
+func XorUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
+	if xorUint128 != nil {
+		return xorUint128(addr(ptr), op)
+	}
+
+	ptr.m.Lock()
+	v := load(ptr)
+	v[0] ^= op[0]
+	v[1] ^= op[1]
+	store(ptr, v)
+	ptr.m.Unlock()
+	return v
+}
+
 func addr(ptr *Uint128) *[2]uint64 {
 	if (uintptr)((unsafe.Pointer)(&ptr.d[0]))%16 == 0 {
 		return (*[2]uint64)((unsafe.Pointer)(&ptr.d[0]))
@@ -123,4 +174,7 @@ var (
 	storeUint128          func(*[2]uint64, [2]uint64)
 	swapUint128           func(*[2]uint64, [2]uint64) [2]uint64
 	addUint128            func(*[2]uint64, [2]uint64) [2]uint64
+	andUint128            func(*[2]uint64, [2]uint64) [2]uint64
+	orUint128             func(*[2]uint64, [2]uint64) [2]uint64
+	xorUint128            func(*[2]uint64, [2]uint64) [2]uint64
 )

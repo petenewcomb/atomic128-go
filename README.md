@@ -8,7 +8,7 @@
 128-bit atomic operations for Golang, using [CMPXCHG16B](http://www.felixcloutier.com/x86/CMPXCHG8B:CMPXCHG16B.html)
 when available. 
 
-Partially based on [github.com/tmthrgd/atomic128](https://github.com/tmthrgd/atomic128).
+Partially based on [github.com/tmthrgd/atomic128](https://github.com/tmthrgd/atomic128), without the problematic parts.
 
 ## Performance
 

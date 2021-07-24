@@ -10,6 +10,7 @@ import (
 )
 
 // Uint128 is an opaque container for an atomic uint128.
+// Uint128 must not be copied.
 // The zero value is a valid value representing [2]uint64{0, 0}.
 type Uint128 struct {
 	// d is protected by m in the fallback code path; it is placed first because

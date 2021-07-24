@@ -279,36 +279,13 @@ func runBenchmarks(b *testing.B, fn func(*testing.PB)) {
 }
 
 func hasNative() bool {
-	return compareAndSwapUint128 != nil || loadUint128 != nil || storeUint128 != nil || swapUint128 != nil || addUint128 != nil
+	return useNativeAmd64
 }
 
 func fallback(tb testing.TB) {
-	cas := compareAndSwapUint128
-	load := loadUint128
-	store := storeUint128
-	swap := swapUint128
-	add := addUint128
-	and := andUint128
-	or := orUint128
-	xor := xorUint128
-
-	compareAndSwapUint128 = nil
-	loadUint128 = nil
-	storeUint128 = nil
-	swapUint128 = nil
-	addUint128 = nil
-	andUint128 = nil
-	orUint128 = nil
-	xorUint128 = nil
-
+	amd64 := useNativeAmd64
+	useNativeAmd64 = false
 	tb.Cleanup(func() {
-		compareAndSwapUint128 = cas
-		loadUint128 = load
-		storeUint128 = store
-		swapUint128 = swap
-		addUint128 = add
-		andUint128 = and
-		orUint128 = or
-		xorUint128 = xor
+		useNativeAmd64 = amd64
 	})
 }

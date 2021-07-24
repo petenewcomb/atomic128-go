@@ -5,8 +5,13 @@
 package atomic128
 
 import (
+	"runtime"
 	"sync"
 	"unsafe"
+)
+
+var (
+	useNativeAmd64 bool
 )
 
 // Uint128 is an opaque container for an atomic uint128.
@@ -27,8 +32,8 @@ type Uint128 struct {
 // by ptr is unchanged, and false is returned.
 // In the old and new values the first of the two elements is the low-order bits.
 func CompareAndSwapUint128(ptr *Uint128, old, new [2]uint64) bool {
-	if compareAndSwapUint128 != nil {
-		return compareAndSwapUint128(addr(ptr), old, new)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return compareAndSwapUint128amd64(addr(ptr), old, new)
 	}
 
 	ptr.m.Lock()
@@ -45,8 +50,8 @@ func CompareAndSwapUint128(ptr *Uint128, old, new [2]uint64) bool {
 // LoadUint128 atomically loads the 128 bit value pointed to by ptr.
 // In the returned value the first of the two elements is the low-order bits.
 func LoadUint128(ptr *Uint128) [2]uint64 {
-	if loadUint128 != nil {
-		return loadUint128(addr(ptr))
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return loadUint128amd64(addr(ptr))
 	}
 
 	ptr.m.Lock()
@@ -58,8 +63,8 @@ func LoadUint128(ptr *Uint128) [2]uint64 {
 // StoreUint128 atomically stores the new value in the 128 bit value pointed to by ptr.
 // In the new value the first of the two elements is the low-order bits.
 func StoreUint128(ptr *Uint128, new [2]uint64) {
-	if storeUint128 != nil {
-		storeUint128(addr(ptr), new)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		storeUint128amd64(addr(ptr), new)
 		return
 	}
 
@@ -72,8 +77,8 @@ func StoreUint128(ptr *Uint128, new [2]uint64) {
 // and it returns the 128 bit value that was previously pointed to by ptr.
 // In the new and returned values the first of the two elements is the low-order bits.
 func SwapUint128(ptr *Uint128, new [2]uint64) [2]uint64 {
-	if swapUint128 != nil {
-		return swapUint128(addr(ptr), new)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return swapUint128amd64(addr(ptr), new)
 	}
 
 	ptr.m.Lock()
@@ -87,8 +92,8 @@ func SwapUint128(ptr *Uint128, new [2]uint64) [2]uint64 {
 // and it returns the resulting 128 bit value.
 // In the incr and returned values the first of the two elements is the low-order bits.
 func AddUint128(ptr *Uint128, incr [2]uint64) [2]uint64 {
-	if addUint128 != nil {
-		return addUint128(addr(ptr), incr)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return addUint128amd64(addr(ptr), incr)
 	}
 
 	ptr.m.Lock()
@@ -107,8 +112,8 @@ func AddUint128(ptr *Uint128, incr [2]uint64) [2]uint64 {
 // and it returns the resulting 128 bit value.
 // In the op and returned values the first of the two elements is the low-order bits.
 func AndUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
-	if andUint128 != nil {
-		return andUint128(addr(ptr), op)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return andUint128amd64(addr(ptr), op)
 	}
 
 	ptr.m.Lock()
@@ -124,8 +129,8 @@ func AndUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
 // and it returns the resulting 128 bit value.
 // In the op and returned values the first of the two elements is the low-order bits.
 func OrUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
-	if orUint128 != nil {
-		return orUint128(addr(ptr), op)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return orUint128amd64(addr(ptr), op)
 	}
 
 	ptr.m.Lock()
@@ -141,8 +146,8 @@ func OrUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
 // and it returns the resulting 128 bit value.
 // In the op and returned values the first of the two elements is the low-order bits.
 func XorUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
-	if xorUint128 != nil {
-		return xorUint128(addr(ptr), op)
+	if runtime.GOARCH == "amd64" && useNativeAmd64 {
+		return xorUint128amd64(addr(ptr), op)
 	}
 
 	ptr.m.Lock()
@@ -168,14 +173,3 @@ func load(ptr *Uint128) [2]uint64 {
 func store(ptr *Uint128, v [2]uint64) {
 	ptr.d[0], ptr.d[1] = v[0], v[1]
 }
-
-var (
-	compareAndSwapUint128 func(*[2]uint64, [2]uint64, [2]uint64) bool
-	loadUint128           func(*[2]uint64) [2]uint64
-	storeUint128          func(*[2]uint64, [2]uint64)
-	swapUint128           func(*[2]uint64, [2]uint64) [2]uint64
-	addUint128            func(*[2]uint64, [2]uint64) [2]uint64
-	andUint128            func(*[2]uint64, [2]uint64) [2]uint64
-	orUint128             func(*[2]uint64, [2]uint64) [2]uint64
-	xorUint128            func(*[2]uint64, [2]uint64) [2]uint64
-)

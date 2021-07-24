@@ -4,8 +4,8 @@
 [![Build Status](https://travis-ci.org/CAFxX/atomic128.svg?branch=master)](https://travis-ci.org/CAFxX/atomic128)
 [![Go Report Card](https://goreportcard.com/badge/github.com/CAFxX/atomic128)](https://goreportcard.com/report/github.com/CAFxX/atomic128)
 
-128-bit atomic operations using [CMPXCHG16B](http://www.felixcloutier.com/x86/CMPXCHG8B:CMPXCHG16B.html)
-for Golang. 
+128-bit atomic operations for Golang, using [CMPXCHG16B](http://www.felixcloutier.com/x86/CMPXCHG8B:CMPXCHG16B.html)
+when available. 
 
 Partially based on [github.com/tmthrgd/atomic128](https://github.com/tmthrgd/atomic128).
 

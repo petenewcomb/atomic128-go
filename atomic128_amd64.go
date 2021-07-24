@@ -8,21 +8,7 @@ func compareAndSwapUint128amd64(*[2]uint64, [2]uint64, [2]uint64) bool
 func loadUint128amd64(*[2]uint64) [2]uint64
 func storeUint128amd64(*[2]uint64, [2]uint64)
 func swapUint128amd64(*[2]uint64, [2]uint64) [2]uint64
-
-func addUint128amd64(ptr *[2]uint64, incr [2]uint64) [2]uint64 {
-	for {
-		old := loadUint128amd64(ptr)
-		new := old
-		new[0] += incr[0]
-		if new[0] < incr[0] {
-			new[1]++
-		}
-		new[1] += incr[1]
-		if compareAndSwapUint128amd64(ptr, old, new) {
-			return new
-		}
-	}
-}
+func addUint128amd64(ptr *[2]uint64, incr [2]uint64) [2]uint64
 
 func init() {
 	if !cpuid.CPU.Supports(cpuid.CX16) {

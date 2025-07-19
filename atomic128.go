@@ -6,24 +6,45 @@ package atomic128
 
 import (
 	"runtime"
-	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
 var (
-	useNativeAmd64 bool
+	useNativeAmd64  bool
+	haveNativeAmd64 bool
 )
+
+func HasNative() bool {
+	return haveNativeAmd64
+}
+
+func UsingNative() bool {
+	return useNativeAmd64
+}
+
+func EnableNative() {
+	if haveNativeAmd64 {
+		useNativeAmd64 = true
+	}
+}
+
+func DisableNative() {
+	useNativeAmd64 = false
+}
 
 // Uint128 is an opaque container for an atomic uint128.
 // Uint128 must not be copied.
-// The zero value is a valid value representing [2]uint64{0, 0}.
+// The zero value must be assumed invalid until Store has been called, because
+// of the initialization requirements of atomic.Value in the fallback case.
 type Uint128 struct {
-	// d is protected by m in the fallback code path; it is placed first because
-	// addr() relies on the 64-bit alignment guarantee: see
-	// https://go101.org/article/memory-layout.html and,
-	// specifically, https://pkg.go.dev/sync/atomic#pkg-note-BUG.
-	d [3]uint64
-	m sync.Mutex
+	// d is unused in the fallback code path and is length 3 so that addr()
+	// can use whichever pair of elements are 128-bit aligned; it is placed first
+	// so addr() can rely on Go's 64-bit struct alignment guarantee: see
+	// https://go101.org/article/memory-layout.html and, specifically,
+	// https://pkg.go.dev/sync/atomic#pkg-note-BUG.
+	d  [3]uint64
+	av atomic.Value
 }
 
 // CompareAndSwapUint128 performs a 128-bit atomic CAS on ptr.
@@ -35,16 +56,7 @@ func CompareAndSwapUint128(ptr *Uint128, old, new [2]uint64) bool {
 	if runtime.GOARCH == "amd64" && useNativeAmd64 {
 		return compareAndSwapUint128amd64(addr(ptr), old, new)
 	}
-
-	ptr.m.Lock()
-	v := load(ptr)
-	if v != old {
-		ptr.m.Unlock()
-		return false
-	}
-	store(ptr, new)
-	ptr.m.Unlock()
-	return true
+	return ptr.av.CompareAndSwap(old, new)
 }
 
 // LoadUint128 atomically loads the 128 bit value pointed to by ptr.
@@ -53,11 +65,7 @@ func LoadUint128(ptr *Uint128) [2]uint64 {
 	if runtime.GOARCH == "amd64" && useNativeAmd64 {
 		return loadUint128amd64(addr(ptr))
 	}
-
-	ptr.m.Lock()
-	v := load(ptr)
-	ptr.m.Unlock()
-	return v
+	return ptr.av.Load().([2]uint64)
 }
 
 // StoreUint128 atomically stores the new value in the 128 bit value pointed to by ptr.
@@ -67,10 +75,7 @@ func StoreUint128(ptr *Uint128, new [2]uint64) {
 		storeUint128amd64(addr(ptr), new)
 		return
 	}
-
-	ptr.m.Lock()
-	store(ptr, new)
-	ptr.m.Unlock()
+	ptr.av.Store(new)
 }
 
 // SwapUint128 atomically stores the new value with the 128 bit value pointed to by ptr,
@@ -80,12 +85,7 @@ func SwapUint128(ptr *Uint128, new [2]uint64) [2]uint64 {
 	if runtime.GOARCH == "amd64" && useNativeAmd64 {
 		return swapUint128amd64(addr(ptr), new)
 	}
-
-	ptr.m.Lock()
-	old := load(ptr)
-	store(ptr, new)
-	ptr.m.Unlock()
-	return old
+	return ptr.av.Swap(new).([2]uint64)
 }
 
 // AddUint128 atomically adds the incr value to the 128 bit value pointed to by ptr,
@@ -96,16 +96,20 @@ func AddUint128(ptr *Uint128, incr [2]uint64) [2]uint64 {
 		return addUint128amd64(addr(ptr), incr)
 	}
 
-	ptr.m.Lock()
-	v := load(ptr)
-	v[0] += incr[0]
-	if v[0] < incr[0] {
-		v[1]++
+	var new [2]uint64
+	for {
+		old := LoadUint128(ptr)
+		new = old
+		new[0] += incr[0]
+		if new[0] < incr[0] {
+			new[1]++
+		}
+		new[1] += incr[1]
+		if CompareAndSwapUint128(ptr, old, new) {
+			break
+		}
 	}
-	v[1] += incr[1]
-	store(ptr, v)
-	ptr.m.Unlock()
-	return v
+	return new
 }
 
 // AndUint128 atomically performs a bitwise AND of the op value to the 128 bit value pointed to by ptr,
@@ -116,13 +120,17 @@ func AndUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
 		return andUint128amd64(addr(ptr), op)
 	}
 
-	ptr.m.Lock()
-	v := load(ptr)
-	v[0] &= op[0]
-	v[1] &= op[1]
-	store(ptr, v)
-	ptr.m.Unlock()
-	return v
+	var new [2]uint64
+	for {
+		old := LoadUint128(ptr)
+		new = old
+		new[0] &= op[0]
+		new[1] &= op[1]
+		if CompareAndSwapUint128(ptr, old, new) {
+			break
+		}
+	}
+	return new
 }
 
 // OrUint128 atomically performs a bitwise OR of the op value to the 128 bit value pointed to by ptr,
@@ -133,13 +141,17 @@ func OrUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
 		return orUint128amd64(addr(ptr), op)
 	}
 
-	ptr.m.Lock()
-	v := load(ptr)
-	v[0] |= op[0]
-	v[1] |= op[1]
-	store(ptr, v)
-	ptr.m.Unlock()
-	return v
+	var new [2]uint64
+	for {
+		old := LoadUint128(ptr)
+		new = old
+		new[0] |= op[0]
+		new[1] |= op[1]
+		if CompareAndSwapUint128(ptr, old, new) {
+			break
+		}
+	}
+	return new
 }
 
 // XorUint128 atomically performs a bitwise XOR of the op value to the 128 bit value pointed to by ptr,
@@ -150,13 +162,17 @@ func XorUint128(ptr *Uint128, op [2]uint64) [2]uint64 {
 		return xorUint128amd64(addr(ptr), op)
 	}
 
-	ptr.m.Lock()
-	v := load(ptr)
-	v[0] ^= op[0]
-	v[1] ^= op[1]
-	store(ptr, v)
-	ptr.m.Unlock()
-	return v
+	var new [2]uint64
+	for {
+		old := LoadUint128(ptr)
+		new = old
+		new[0] ^= op[0]
+		new[1] ^= op[1]
+		if CompareAndSwapUint128(ptr, old, new) {
+			break
+		}
+	}
+	return new
 }
 
 func addr(ptr *Uint128) *[2]uint64 {

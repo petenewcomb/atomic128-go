@@ -8,6 +8,7 @@ import (
 func TestLoadStore(t *testing.T) {
 	runTests(t, func(t *testing.T) {
 		n := &Uint128{}
+		StoreUint128(n, [2]uint64{})
 
 		v := LoadUint128(n)
 		if got, expected := v, [2]uint64{0, 0}; got != expected {
@@ -25,6 +26,8 @@ func TestLoadStore(t *testing.T) {
 func TestAdd(t *testing.T) {
 	runTests(t, func(t *testing.T) {
 		n := &Uint128{}
+		StoreUint128(n, [2]uint64{})
+
 		v := AddUint128(n, [2]uint64{2, 40})
 		if got, expected := v, [2]uint64{2, 40}; got != expected {
 			t.Fatalf("got %v, expected %v", got, expected)
@@ -176,88 +179,112 @@ func TestXor(t *testing.T) {
 }
 
 func BenchmarkLoad(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		for pb.Next() {
-			_ = LoadUint128(n)
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			for pb.Next() {
+				_ = LoadUint128(n)
+			}
 		}
 	})
 }
 
 func BenchmarkStore(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := rand.Uint64(), rand.Uint64()
-		for pb.Next() {
-			StoreUint128(n, [2]uint64{i, j})
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			i, j := rand.Uint64(), rand.Uint64()
+			for pb.Next() {
+				StoreUint128(n, [2]uint64{i, j})
+			}
 		}
 	})
 }
 
 func BenchmarkSwap(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := rand.Uint64(), rand.Uint64()
-		for pb.Next() {
-			_ = SwapUint128(n, [2]uint64{i, j})
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			i, j := rand.Uint64(), rand.Uint64()
+			for pb.Next() {
+				_ = SwapUint128(n, [2]uint64{i, j})
+			}
 		}
 	})
 }
 
 func BenchmarkAdd(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := rand.Uint64(), rand.Uint64()
-		for pb.Next() {
-			_ = AddUint128(n, [2]uint64{i, j})
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			i, j := rand.Uint64(), rand.Uint64()
+			for pb.Next() {
+				_ = AddUint128(n, [2]uint64{i, j})
+			}
 		}
 	})
 }
 
 func BenchmarkAnd(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := rand.Uint64(), rand.Uint64()
-		for pb.Next() {
-			_ = AndUint128(n, [2]uint64{i, j})
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			i, j := rand.Uint64(), rand.Uint64()
+			for pb.Next() {
+				_ = AndUint128(n, [2]uint64{i, j})
+			}
 		}
 	})
 }
 
 func BenchmarkOr(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := rand.Uint64(), rand.Uint64()
-		for pb.Next() {
-			_ = OrUint128(n, [2]uint64{i, j})
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			i, j := rand.Uint64(), rand.Uint64()
+			for pb.Next() {
+				_ = OrUint128(n, [2]uint64{i, j})
+			}
 		}
 	})
 }
 
 func BenchmarkXor(b *testing.B) {
-	n := &Uint128{}
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := rand.Uint64(), rand.Uint64()
-		for pb.Next() {
-			_ = XorUint128(n, [2]uint64{i, j})
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		return func(pb *testing.PB) {
+			StoreUint128(n, [2]uint64{})
+			i, j := rand.Uint64(), rand.Uint64()
+			for pb.Next() {
+				_ = XorUint128(n, [2]uint64{i, j})
+			}
 		}
 	})
 }
 
 func BenchmarkCAS(b *testing.B) {
-	n := &Uint128{}
 	_i, _j := rand.Uint64(), rand.Uint64()
-	runBenchmarks(b, func(pb *testing.PB) {
-		i, j := _i, _j
-		for pb.Next() {
-			_ = CompareAndSwapUint128(n, [2]uint64{i, j}, [2]uint64{j, i})
-			i, j = j, i
+	runBenchmarks(b, func() func(*testing.PB) {
+		n := &Uint128{}
+		StoreUint128(n, [2]uint64{_i, _j})
+		return func(pb *testing.PB) {
+			i, j := _i, _j
+			for pb.Next() {
+				_ = CompareAndSwapUint128(n, [2]uint64{i, j}, [2]uint64{j, i})
+				i, j = j, i
+			}
 		}
 	})
 }
 
 func runTests(t *testing.T, fn func(*testing.T)) {
-	if hasNative() {
+	if UsingNative() {
 		t.Run("native", fn)
 	}
 	t.Run("fallback", func(t *testing.T) {
@@ -266,26 +293,28 @@ func runTests(t *testing.T, fn func(*testing.T)) {
 	})
 }
 
-func runBenchmarks(b *testing.B, fn func(*testing.PB)) {
-	if hasNative() {
+func runBenchmarks(b *testing.B, fnfn func() func(*testing.PB)) {
+	if UsingNative() {
 		b.Run("native", func(b *testing.B) {
+			b.ReportAllocs()
+			fn := fnfn()
 			b.RunParallel(fn)
 		})
 	}
 	b.Run("fallback", func(b *testing.B) {
+		b.ReportAllocs()
 		fallback(b)
+		fn := fnfn()
 		b.RunParallel(fn)
 	})
 }
 
-func hasNative() bool {
-	return useNativeAmd64
-}
-
 func fallback(tb testing.TB) {
-	amd64 := useNativeAmd64
-	useNativeAmd64 = false
+	wasUsingNative := UsingNative()
+	DisableNative()
 	tb.Cleanup(func() {
-		useNativeAmd64 = amd64
+		if wasUsingNative {
+			EnableNative()
+		}
 	})
 }

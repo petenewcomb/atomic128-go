@@ -15,5 +15,8 @@ func orUint128amd64(ptr *[2]uint64, incr [2]uint64) [2]uint64
 func xorUint128amd64(ptr *[2]uint64, incr [2]uint64) [2]uint64
 
 func init() {
-	useNativeAmd64 = cpuid.CPU.Supports(cpuid.CX16)
+	haveNativeAmd64 = cpuid.CPU.Supports(cpuid.CX16)
+	if haveNativeAmd64 {
+		useNativeAmd64 = true
+	}
 }

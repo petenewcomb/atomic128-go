@@ -1,7 +1,7 @@
 // Package atomic128 implements atomic operations on 128 bit values.
 // When possible (e.g. on amd64 processors that support CMPXCHG16B), it automatically uses
 // native CPU features to implement the operations; otherwise it falls back to an approach
-// based on mutexes.
+// based on [atomic.Value].
 package atomic128
 
 import (
